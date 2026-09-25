@@ -660,6 +660,24 @@ Item {
               SettingsSlider {
                 width: parent.width
                 bar: root.fakeBar
+                label: "Repaint rate (fps)"
+                helpText: "How often the rings redraw per second — independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; positions stay exact, they just update less often."
+                minimum: 4
+                maximum: 60
+                step: 1
+                value: root.draft.targetFps
+                valueText: Math.round(root.draft.targetFps) + " fps"
+                onMoved: function(v) {
+                  root.patchDraft({ targetFps: Clock.clampTargetFps(v) }, false)
+                }
+                onReleased: function(v) {
+                  root.patchDraft({ targetFps: Clock.clampTargetFps(v) })
+                }
+              }
+
+              SettingsSlider {
+                width: parent.width
+                bar: root.fakeBar
                 label: "Ring arc"
                 helpText: "How much of the ring is visible, centered on the dial focus. 360° shows the full circle."
                 minimum: 30
