@@ -107,6 +107,10 @@ function clampRingOpacity(value) {
   return clampNumber(value, 1, 0, 1, 100)
 }
 
+function clampTargetFps(value) {
+  return clampNumber(value, 15, 4, 60, true)
+}
+
 function defaultArcDegreesForPosition(position) {
   var zone = positionZone(position)
   if (zone === "center") return 360
@@ -281,6 +285,7 @@ function readSettings(entry) {
     ringGap: clampRingGap(entry.ringGap !== undefined ? entry.ringGap : 57),
     ringArcDegrees: clampRingArcDegrees(entry.ringArcDegrees, position),
     ringTransparency: readRingTransparency(entry),
+    targetFps: clampTargetFps(entry.targetFps !== undefined ? entry.targetFps : 15),
     screenMode: normalizeScreenMode(String(entry.screenMode || "all")),
     selectedMonitors: normalizeMonitorNames(entry.selectedMonitors),
     perMonitorScale: entry.perMonitorScale === true,
@@ -342,6 +347,7 @@ function settingsToEntry(pluginId, settings) {
     ringGap: settings.ringGap,
     ringArcDegrees: settings.ringArcDegrees,
     ringTransparency: settings.ringTransparency,
+    targetFps: settings.targetFps,
     minuteRingOpacity: settings.ringTransparency,
     secondRingOpacity: settings.ringTransparency,
     screenMode: settings.screenMode,
@@ -690,10 +696,10 @@ function normalizeRefreshRate(hz) {
 
 var CANVAS_MAX_HZ = 60
 
-function tickIntervalMs(refreshRateHz, lowPower, showSeconds) {
+function tickIntervalMs(refreshRateHz, lowPower, targetFps) {
   if (lowPower) return 500
-  if (showSeconds === false) return 1000
-  var hz = Math.min(CANVAS_MAX_HZ, normalizeRefreshRate(refreshRateHz))
+  var monitorHz = normalizeRefreshRate(refreshRateHz)
+  var hz = Math.min(CANVAS_MAX_HZ, monitorHz, clampTargetFps(targetFps))
   return Math.max(16, Math.round(1000 / hz))
 }
 

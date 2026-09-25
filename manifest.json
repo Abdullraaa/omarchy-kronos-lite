@@ -144,6 +144,13 @@
       "description": "Ring visibility for both minute and seconds rings (0–100%)"
     },
     {
+      "key": "targetFps",
+      "type": "number",
+      "label": "Repaint rate (fps)",
+      "defaultValue": 15,
+      "description": "How often the rings redraw per second, independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; the ring position is always exact for the instant it draws, just updated less often. Range 4-60."
+    },
+    {
       "key": "minuteRingOpacity",
       "type": "number",
       "label": "Minute ring opacity",

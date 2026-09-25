@@ -32,6 +32,7 @@ Item {
   property real ringTransparency: 1
   property string accentMode: "contrast"
   property bool lowPower: false
+  property real targetFps: 15
   property real screenRefreshRate: 60
 
   property string hourColor: ""
@@ -72,7 +73,7 @@ Item {
   property real timeMs: Date.now()
 
   readonly property int ringTickMs: Clock.tickIntervalMs(
-    face.screenRefreshRate, face.lowPower, face.showSeconds
+    face.screenRefreshRate, face.lowPower, face.targetFps
   )
   readonly property real layoutScale: Clock.clampScale(face.scaleFactor)
   readonly property real hourScale: Clock.clampTextScale(face.hourScaleFactor)
