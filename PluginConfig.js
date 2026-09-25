@@ -101,7 +101,7 @@ function defaultSettings() {
     ringArcDegrees: 0,
     ringTransparency: 1,
     targetFps: 15,
-    tickStyle: "sweep",
+    tickStyle: "analog",
     minuteRingOpacity: 1,
     secondRingOpacity: 1,
     screenMode: "all",

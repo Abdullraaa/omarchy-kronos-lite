@@ -181,7 +181,7 @@ Close with **Esc**, clicking the scrim, or the **Close** button.
 | `use24h` | boolean | `false` | 24-hour hour label |
 | `showSeconds` | boolean | `true` | Show outer seconds ring and capsule — affects what is drawn, not repaint rate |
 | `targetFps` | number | `15` | Ring repaint rate, 4–60 fps. Ignored when `tickStyle` is `analog` |
-| `tickStyle` | string | `sweep` | `sweep` interpolates continuously at `targetFps`; `analog` snaps to whole seconds, one repaint/sec |
+| `tickStyle` | string | `analog` | `analog` snaps to whole seconds, one repaint/sec; `sweep` interpolates continuously at `targetFps` |
 | `clockEnabled` | boolean | `true` | Master visibility toggle (bar widget) |
 | `showDate` | boolean | `true` | Show date block under the hour |
 | `accentMode` | string | `theme` | Ring colors — `contrast` (opposite theme bg), `accent`, `theme` (foreground/muted), `mono` |
@@ -318,10 +318,16 @@ cost. These two settings separate them.
 | Setting | Values | Effect |
 |---|---|---|
 | **Repaint rate (fps)** (`targetFps`) | `4`–`60`, default `15` | How often the rings redraw per second in `sweep` mode. Position is always exact for the instant it draws — just updated less often. Ignored when `tickStyle` is `analog`. |
-| **Tick style** (`tickStyle`) | `sweep` (default), `analog` | `sweep` interpolates ring position continuously between whole seconds at `targetFps`. `analog` snaps to each whole second and repaints exactly once per second, for a classic analog-clock tick and the lowest cost. |
+| **Tick style** (`tickStyle`) | `analog` (default), `sweep` | `analog` snaps to each whole second and repaints exactly once per second, for a classic analog-clock tick and the lowest cost. `sweep` interpolates ring position continuously between whole seconds at `targetFps`. |
 
 Both are on the **General** tab. The fps slider greys out when `tickStyle` is
-`analog`, since it has no effect there.
+`analog`, since it has no effect there — and because `analog` is the default,
+the slider is greyed out on a fresh install until you switch to `sweep`.
+
+The default is `analog` rather than upstream's continuous repaint so that a
+fresh install costs one repaint per second. Upstream reached ~1 Hz only by
+turning the seconds ring off; here you keep the ring, the arc and the capsules
+and still pay 1 Hz.
 
 Effective interval in `sweep` mode is `1000 / min(60, monitorHz, targetFps)`,
 floored at 16 ms. In `analog` mode the timer re-aims at the next wall-clock
@@ -349,7 +355,7 @@ There is no per-monitor position config — the same position and scale apply to
 
 The clock runs **inside quickshell** (same process as the bar and other shell plugins) — there is no separate clock process.
 
-Rings are drawn with **`RingCanvas.qml`** — 60 ticks per ring, labeled 00–59 at every tick. Repaint cadence is set by `targetFps` and `tickStyle` and is **independent of `showSeconds`**: turning the seconds ring off changes what is drawn, not how often. The effective interval is `1000 / min(60, monitorHz, targetFps)` in `sweep` mode, or exactly one repaint per wall-clock second in `analog` mode. The settings preview uses a slower fixed tick (`lowPower`, 500 ms) to save CPU while editing.
+Rings are drawn with **`RingCanvas.qml`** — 60 ticks per ring, labeled 00–59 at every tick. Repaint cadence is set by `targetFps` and `tickStyle` and is **independent of `showSeconds`**: turning the seconds ring off changes what is drawn, not how often. The effective interval is `1000 / min(60, monitorHz, targetFps)` in `sweep` mode, or exactly one repaint per wall-clock second in `analog` mode. The settings preview uses a slower fixed tick (`lowPower`, 500 ms) to save CPU while editing, so the preview does not reflect the **Repaint rate (fps)** slider — judge that one on the clock itself.
 
 | | Omarchy shell + clock | Omarchy shell only | Clock delta (approx.) |
 |---|---|---|---|

@@ -666,7 +666,7 @@ Item {
                 label: "Repaint rate (fps)"
                 helpText: root.draft.tickStyle === "analog"
                   ? "Not used in Analog tick style — the clock repaints exactly once per second regardless of this value."
-                  : "How often the rings redraw per second — independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; positions stay exact, they just update less often."
+                  : "How often the rings redraw per second — independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; positions stay exact, they just update less often. The preview above is throttled while the panel is open and will not reflect this setting — check the clock itself."
                 minimum: 4
                 maximum: 60
                 step: 1
