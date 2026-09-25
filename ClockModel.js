@@ -111,6 +111,20 @@ function clampTargetFps(value) {
   return clampNumber(value, 15, 4, 60, true)
 }
 
+var TICK_STYLES = ["sweep", "analog"]
+
+function normalizeTickStyle(value) {
+  var style = String(value || "sweep").toLowerCase()
+  return TICK_STYLES.indexOf(style) >= 0 ? style : "sweep"
+}
+
+function tickStyleOptions() {
+  return [
+    { value: "sweep", label: "Sweep — smooth motion, configurable fps" },
+    { value: "analog", label: "Analog — exact 1-per-second tick, lowest cost" }
+  ]
+}
+
 function defaultArcDegreesForPosition(position) {
   var zone = positionZone(position)
   if (zone === "center") return 360
@@ -286,6 +300,7 @@ function readSettings(entry) {
     ringArcDegrees: clampRingArcDegrees(entry.ringArcDegrees, position),
     ringTransparency: readRingTransparency(entry),
     targetFps: clampTargetFps(entry.targetFps !== undefined ? entry.targetFps : 15),
+    tickStyle: normalizeTickStyle(entry.tickStyle),
     screenMode: normalizeScreenMode(String(entry.screenMode || "all")),
     selectedMonitors: normalizeMonitorNames(entry.selectedMonitors),
     perMonitorScale: entry.perMonitorScale === true,
@@ -348,6 +363,7 @@ function settingsToEntry(pluginId, settings) {
     ringArcDegrees: settings.ringArcDegrees,
     ringTransparency: settings.ringTransparency,
     targetFps: settings.targetFps,
+    tickStyle: settings.tickStyle,
     minuteRingOpacity: settings.ringTransparency,
     secondRingOpacity: settings.ringTransparency,
     screenMode: settings.screenMode,
@@ -701,6 +717,16 @@ function tickIntervalMs(refreshRateHz, lowPower, targetFps) {
   var monitorHz = normalizeRefreshRate(refreshRateHz)
   var hz = Math.min(CANVAS_MAX_HZ, monitorHz, clampTargetFps(targetFps))
   return Math.max(16, Math.round(1000 / hz))
+}
+
+function msUntilNextSecondBoundary(ms) {
+  var rem = 1000 - (ms % 1000)
+  return rem <= 0 ? 1000 : rem
+}
+
+function snappedMs(ms, tickStyle) {
+  if (tickStyle !== "analog") return ms
+  return Math.floor(ms / 1000) * 1000
 }
 
 function formatRefreshRate(hz) {
