@@ -114,14 +114,14 @@ function clampTargetFps(value) {
 var TICK_STYLES = ["sweep", "analog"]
 
 function normalizeTickStyle(value) {
-  var style = String(value || "sweep").toLowerCase()
-  return TICK_STYLES.indexOf(style) >= 0 ? style : "sweep"
+  var style = String(value || "analog").toLowerCase()
+  return TICK_STYLES.indexOf(style) >= 0 ? style : "analog"
 }
 
 function tickStyleOptions() {
   return [
-    { value: "sweep", label: "Sweep — smooth motion, configurable fps" },
-    { value: "analog", label: "Analog — exact 1-per-second tick, lowest cost" }
+    { value: "analog", label: "Analog — exact 1-per-second tick, lowest cost (default)" },
+    { value: "sweep", label: "Sweep — smooth motion, configurable fps" }
   ]
 }
 
@@ -299,7 +299,8 @@ function readSettings(entry) {
     ringGap: clampRingGap(entry.ringGap !== undefined ? entry.ringGap : 57),
     ringArcDegrees: clampRingArcDegrees(entry.ringArcDegrees, position),
     ringTransparency: readRingTransparency(entry),
-    targetFps: clampTargetFps(entry.targetFps !== undefined ? entry.targetFps : 15),
+    targetFps: clampTargetFps(
+      entry.targetFps !== undefined && entry.targetFps !== null ? entry.targetFps : 15),
     tickStyle: normalizeTickStyle(entry.tickStyle),
     screenMode: normalizeScreenMode(String(entry.screenMode || "all")),
     selectedMonitors: normalizeMonitorNames(entry.selectedMonitors),

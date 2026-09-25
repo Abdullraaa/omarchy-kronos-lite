@@ -229,7 +229,7 @@ Item {
     if (face.active && face.tickStyle === "analog") face.stepAnalogTick()
   }
 
-  onRingTickMsChanged: if (face.tickStyle === "sweep") ringTick.restart()
+  onRingTickMsChanged: if (face.active && face.tickStyle === "sweep") ringTick.restart()
   onActiveChanged: {
     if (face.active && face.tickStyle === "sweep") ringTick.restart()
     face.syncAnalogTick()
