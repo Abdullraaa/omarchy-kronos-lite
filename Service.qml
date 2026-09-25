@@ -14,7 +14,7 @@ Item {
   property var shell: null
   property var manifest: null
 
-  readonly property string pluginId: manifest && manifest.id ? manifest.id : "mash2rafi.kronos"
+  readonly property string pluginId: manifest && manifest.id ? manifest.id : "ra.kronos-lite"
   readonly property var pluginEntry: liveConfig.entry || Config.entryOrDefault(shell, root.pluginId)
   readonly property var cfg: Clock.readSettings(root.pluginEntry)
 
@@ -189,7 +189,7 @@ Item {
         window: panel
       }
 
-      WlrLayershell.namespace: "MASH2RAFI-kronos"
+      WlrLayershell.namespace: "ra-kronos-lite"
       WlrLayershell.layer: WlrLayer.Bottom
       WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
       exclusionMode: ExclusionMode.Ignore

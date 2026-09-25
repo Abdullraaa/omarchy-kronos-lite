@@ -6,7 +6,7 @@ import "PluginConfig.js" as Config
 
 BarWidget {
   id: root
-  moduleName: "mash2rafi.kronos"
+  moduleName: "ra.kronos-lite"
 
   readonly property var shell: root.bar ? root.bar.shell : null
   readonly property var pluginEntry: Config.entryOrDefault(root.shell, root.moduleName)

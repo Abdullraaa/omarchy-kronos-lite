@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "mash2rafi.kronos",
-  "name": "Kronos",
-  "version": "1.1.0",
+  "id": "ra.kronos-lite",
+  "name": "Kronos Lite",
+  "version": "1.1.0-lite.1",
   "author": "MASH2RAFI",
-  "description": "Desktop clock with smooth minute/second orbital rings or a unified digital readout, independent sizing controls, per-component customization, and a four-tab GUI settings panel on the wallpaper layer",
+  "description": "Fork of Kronos with an independent repaint-rate setting (targetFps) decoupled from showSeconds, to cut GPU/CPU cost without dropping the seconds ring or arc.",
   "kinds": ["service", "panel", "bar-widget"],
   "keepLoaded": true,
   "entryPoints": {
