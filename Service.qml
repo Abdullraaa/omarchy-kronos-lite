@@ -260,6 +260,7 @@ Item {
           use24h: root.cfg.use24h
           showSeconds: root.cfg.showSeconds
           targetFps: root.cfg.targetFps
+          tickStyle: root.cfg.tickStyle
           showDate: root.cfg.showDate
           accentMode: root.cfg.accentMode
           clockFont: root.cfg.clockFont
