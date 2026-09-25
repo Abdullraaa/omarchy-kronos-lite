@@ -33,6 +33,7 @@ Item {
   property string accentMode: "contrast"
   property bool lowPower: false
   property real targetFps: 15
+  property string tickStyle: "sweep"
   property real screenRefreshRate: 60
 
   property string hourColor: ""
@@ -198,21 +199,43 @@ Item {
   }
 
   function refreshTime() {
-    face.timeMs = Date.now()
+    face.timeMs = Clock.snappedMs(Date.now(), face.tickStyle)
     rings.repaint()
   }
 
   Timer {
     id: ringTick
     interval: face.ringTickMs
-    running: face.active
+    running: face.active && face.tickStyle === "sweep"
     repeat: true
     triggeredOnStart: true
     onTriggered: face.refreshTime()
   }
 
+  Timer {
+    id: analogTick
+    repeat: false
+    onTriggered: face.stepAnalogTick()
+  }
+
+  function stepAnalogTick() {
+    face.refreshTime()
+    analogTick.interval = Clock.msUntilNextSecondBoundary(Date.now())
+    analogTick.start()
+  }
+
+  function syncAnalogTick() {
+    analogTick.stop()
+    if (face.active && face.tickStyle === "analog") face.stepAnalogTick()
+  }
+
   onRingTickMsChanged: ringTick.restart()
-  onActiveChanged: if (face.active) ringTick.restart()
+  onActiveChanged: {
+    if (face.active) ringTick.restart()
+    face.syncAnalogTick()
+  }
+  onTickStyleChanged: face.syncAnalogTick()
+  Component.onCompleted: face.syncAnalogTick()
 
   Item {
     id: dialBlock
