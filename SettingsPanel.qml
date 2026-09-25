@@ -30,6 +30,7 @@ Item {
     || dateFontField.popupOpen
     || minuteCapsuleFontField.popupOpen
     || secondCapsuleFontField.popupOpen
+    || tickStyleField.popupOpen
   readonly property color scrim: Color.menu.scrim
   readonly property color cardBackground: Color.popups.background
   readonly property var cardBorderSpec: Border.surfaceSpec(
@@ -63,6 +64,7 @@ Item {
 
   readonly property var accentOptions: Theme.accentModeOptions()
   readonly property var layoutStyleOptions: Clock.layoutStyleOptions()
+  readonly property var tickStyleOptions: Clock.tickStyleOptions()
   readonly property var screenModeOptions: Clock.screenModeOptions()
 
   property string settingsPage: "general"
@@ -398,6 +400,7 @@ Item {
                   availableWidth: 560
                   use24h: root.draft.use24h
                   showSeconds: root.draft.showSeconds
+                  tickStyle: root.draft.tickStyle
                   showDate: root.draft.showDate
                   accentMode: root.draft.accentMode
                   clockFont: root.draft.clockFont
@@ -661,17 +664,32 @@ Item {
                 width: parent.width
                 bar: root.fakeBar
                 label: "Repaint rate (fps)"
-                helpText: "How often the rings redraw per second — independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; positions stay exact, they just update less often."
+                helpText: root.draft.tickStyle === "analog"
+                  ? "Not used in Analog tick style — the clock repaints exactly once per second regardless of this value."
+                  : "How often the rings redraw per second — independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; positions stay exact, they just update less often."
                 minimum: 4
                 maximum: 60
                 step: 1
                 value: root.draft.targetFps
                 valueText: Math.round(root.draft.targetFps) + " fps"
+                enabled: root.draft.tickStyle !== "analog"
+                opacity: enabled ? 1.0 : 0.45
                 onMoved: function(v) {
                   root.patchDraft({ targetFps: Clock.clampTargetFps(v) }, false)
                 }
                 onReleased: function(v) {
                   root.patchDraft({ targetFps: Clock.clampTargetFps(v) })
+                }
+              }
+
+              Dropdown {
+                id: tickStyleField
+                width: parent.width
+                label: "Tick style"
+                value: root.draft.tickStyle
+                options: root.tickStyleOptions
+                onChanged: function(v) {
+                  root.patchDraft({ tickStyle: Clock.normalizeTickStyle(v) })
                 }
               }
 
