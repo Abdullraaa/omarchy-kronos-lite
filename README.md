@@ -1,4 +1,10 @@
-# Kronos
+# Kronos Lite
+
+A personal fork of [Kronos](https://github.com/MASH2RAFI/omarchy-kronos) by MASH2RAFI, forked at
+`2164356` and installed under the plugin id `ra.kronos-lite` so it lives side-by-side
+with the original. The fork adds two settings — `targetFps` and `tickStyle` — that
+decouple repaint cadence from which features are visible; everything else below is
+upstream behaviour. See [Repaint rate and tick style](#repaint-rate-and-tick-style).
 
 A third-party [Omarchy](https://omarchy.org) shell plugin that renders a large, deeply customizable desktop clock on your wallpaper. The default look pairs a bold hour numeral with two smooth orbital rings for minutes and seconds, inspired by terminal-style and Ryoku-like orbital layouts — or switch to a unified digital readout, and tune color, font, size, and position independently for every piece.
 
@@ -25,9 +31,9 @@ All shots use `top-right` with a vertical bar — hour against the bar, rings cu
 - **Per-component customization** — hour, date, minute capsule, second capsule, and rings/tick labels each get their own color override, font override, visibility toggle, and position nudge, independent of the global theme (**Components** tab)
 - **Saved layouts** — name and save your current look, then apply/rename/update/delete it later; switch between full presets without losing your monitor setup (**General** tab)
 - **Multi-monitor** — one wallpaper-layer clock per output; each screen sizes and positions independently (portrait, ultrawide, mixed resolutions)
-- **Screen-aware sizing** — outer ring scales from each monitor's width and height (default ~40% of screen height, adjustable 25–55%)
+- **Screen-aware sizing** — outer ring scales from each monitor's width and height (default 29% of screen height, adjustable 25–55%)
 - **Bar-aware placement** — auto-insets from the Omarchy bar on the anchored edge, per screen
-- **Smooth animation** — ring repaints capped at 60 Hz (1 Hz when seconds are off)
+- **Independent repaint rate** — ring repaint cadence is set by `targetFps` (default 15, range 4–60) and `tickStyle`, not by whether the seconds ring is shown
 - **Theme integration** — uses Omarchy palette (`foreground`, `background`, `muted`, `accent`) with live theme updates; **Contrast** mode draws rings opposite the theme background for wallpaper visibility
 - **Ring transparency** — single slider fades both rings (0–100%)
 - **Independent sizing** — layout, ring geometry, text, and fonts are separate controls (see [Sizing](#sizing))
@@ -45,35 +51,39 @@ All shots use `top-right` with a vertical bar — hour against the bar, rings cu
 
 ## Installation
 
-### Option A — Omarchy plugin command (recommended)
+This fork is not published to a remote of its own — `origin` still points at
+upstream. `omarchy plugin add <url>` therefore installs *upstream*, not this fork.
+Install it from the local working copy instead.
+
+### Option A — Copy into plugins directory (how this is actually installed)
 
 ```bash
-omarchy plugin add https://github.com/MASH2RAFI/omarchy-kronos.git --enable
+rsync -a --delete --exclude='.git' \
+  ~/Projects/omarchy-kronos-lite/ ~/.config/omarchy/plugins/ra.kronos-lite/
+
+omarchy plugin enable ra.kronos-lite
 omarchy restart shell
 ```
+
+Re-run the `rsync` after every code change — the install directory is a plain
+copy, not a symlink, so edits in the repo are not live until it runs. Note that
+`--delete` mirrors the repo: anything created only in the install directory is
+destroyed on the next sync.
 
 ### Option B — Symlink (development)
 
 ```bash
-git clone https://github.com/MASH2RAFI/omarchy-kronos.git ~/Projects/omarchy-kronos
+ln -sfn ~/Projects/omarchy-kronos-lite \
+  ~/.config/omarchy/plugins/ra.kronos-lite
 
-ln -sfn ~/Projects/omarchy-kronos \
-  ~/.config/omarchy/plugins/mash2rafi.kronos
-
-omarchy plugin enable mash2rafi.kronos
+omarchy plugin enable ra.kronos-lite
 omarchy restart shell
 ```
 
-### Option C — Copy into plugins directory
+Symlinking skips the rsync step, but `omarchy plugin validate` and the plugin
+loader both resolve through the link — keep the repo path stable if you use it.
 
-```bash
-git clone https://github.com/MASH2RAFI/omarchy-kronos.git
-cp -r omarchy-kronos ~/.config/omarchy/plugins/mash2rafi.kronos
-omarchy plugin enable mash2rafi.kronos
-omarchy restart shell
-```
-
-The plugin id **must** match the directory name: `mash2rafi.kronos`.
+The plugin id **must** match the directory name: `ra.kronos-lite`.
 
 ## Configuration
 
@@ -83,7 +93,7 @@ Add or edit the plugin entry in `~/.config/omarchy/shell.json`:
 {
   "plugins": [
     {
-      "id": "mash2rafi.kronos",
+      "id": "ra.kronos-lite",
       "scale": 1,
       "hourScale": 0.75,
       "dateScale": 1,
@@ -145,12 +155,12 @@ When the plugin is enabled, a **bar widget** is added to your Omarchy bar (defau
 | **Left click** | Toggle the wallpaper clock on/off (`clockEnabled`) |
 | **Right click** | Open settings |
 
-Move it like any bar widget: `omarchy bar move mash2rafi.kronos --section center --after omarchy.clock`
+Move it like any bar widget: `omarchy bar move ra.kronos-lite --section center --after omarchy.clock`
 
 You can also open settings from the terminal:
 
 ```bash
-omarchy-shell shell summon mash2rafi.kronos "{}"
+omarchy-shell shell summon ra.kronos-lite "{}"
 ```
 
 Close with **Esc**, clicking the scrim, or the **Close** button.
@@ -169,7 +179,9 @@ Close with **Esc**, clicking the scrim, or the **Close** button.
 | `position` | string | `top-right` | Screen anchor — see [Positions](#positions) |
 | `centerLayout` | string | `orbit` | Layout style — see [Layout styles](#layout-styles) |
 | `use24h` | boolean | `false` | 24-hour hour label |
-| `showSeconds` | boolean | `true` | Show outer seconds ring and capsule |
+| `showSeconds` | boolean | `true` | Show outer seconds ring and capsule — affects what is drawn, not repaint rate |
+| `targetFps` | number | `15` | Ring repaint rate, 4–60 fps. Ignored when `tickStyle` is `analog` |
+| `tickStyle` | string | `sweep` | `sweep` interpolates continuously at `targetFps`; `analog` snaps to whole seconds, one repaint/sec |
 | `clockEnabled` | boolean | `true` | Master visibility toggle (bar widget) |
 | `showDate` | boolean | `true` | Show date block under the hour |
 | `accentMode` | string | `theme` | Ring colors — `contrast` (opposite theme bg), `accent`, `theme` (foreground/muted), `mono` |
@@ -296,6 +308,29 @@ The **General** tab has a **Saved layouts** section for managing named appearanc
 
 A layout snapshot is appearance only — it deliberately excludes `screenMode`, `selectedMonitors`, `perMonitorScale`, `scaleReferenceHeight`, and `clockEnabled`, so applying a saved look never moves the clock to a different monitor or turns it off. Layouts are stored in `savedLayouts` in `shell.json` and aren't affected by **Reset to defaults**, which only resets the current look.
 
+## Repaint rate and tick style
+
+The one behavioural difference from upstream Kronos. Upstream tied repaint
+cadence to `showSeconds`: seconds ring on meant repainting at monitor refresh
+(capped 60 Hz), off meant ~1 Hz. That forced a choice between the look and the
+cost. These two settings separate them.
+
+| Setting | Values | Effect |
+|---|---|---|
+| **Repaint rate (fps)** (`targetFps`) | `4`–`60`, default `15` | How often the rings redraw per second in `sweep` mode. Position is always exact for the instant it draws — just updated less often. Ignored when `tickStyle` is `analog`. |
+| **Tick style** (`tickStyle`) | `sweep` (default), `analog` | `sweep` interpolates ring position continuously between whole seconds at `targetFps`. `analog` snaps to each whole second and repaints exactly once per second, for a classic analog-clock tick and the lowest cost. |
+
+Both are on the **General** tab. The fps slider greys out when `tickStyle` is
+`analog`, since it has no effect there.
+
+Effective interval in `sweep` mode is `1000 / min(60, monitorHz, targetFps)`,
+floored at 16 ms. In `analog` mode the timer re-aims at the next wall-clock
+second boundary after every firing, recomputed from `Date.now()`, so it cannot
+accumulate drift.
+
+Turning **Seconds ring** off no longer changes repaint cadence — it only removes
+the outer ring and its capsule.
+
 ## Multi-monitor
 
 The clock uses Omarchy's standard **`Variants { model: Quickshell.screens }`** pattern — one full-screen wallpaper layer per connected output, same as the background and notification plugins.
@@ -314,7 +349,7 @@ There is no per-monitor position config — the same position and scale apply to
 
 The clock runs **inside quickshell** (same process as the bar and other shell plugins) — there is no separate clock process.
 
-Rings are drawn with **`RingCanvas.qml`** — 60 ticks per ring, labeled 00–59 at every tick. Repaints are capped at **60 Hz** (even on high-refresh monitors) and drop to **~1 Hz** when the seconds ring is off. The settings preview uses a slower tick (`lowPower`) to save CPU while editing.
+Rings are drawn with **`RingCanvas.qml`** — 60 ticks per ring, labeled 00–59 at every tick. Repaint cadence is set by `targetFps` and `tickStyle` and is **independent of `showSeconds`**: turning the seconds ring off changes what is drawn, not how often. The effective interval is `1000 / min(60, monitorHz, targetFps)` in `sweep` mode, or exactly one repaint per wall-clock second in `analog` mode. The settings preview uses a slower fixed tick (`lowPower`, 500 ms) to save CPU while editing.
 
 | | Omarchy shell + clock | Omarchy shell only | Clock delta (approx.) |
 |---|---|---|---|
@@ -340,14 +375,14 @@ print(rss, f"CPU: {cpu:.1f}% of one core (~{cpu/ncpu:.1f}% of all cores)")
 PY
 ```
 
-Turn off **Seconds ring** (General tab) for the lowest CPU use (~1 repaint/sec).
+For the lowest CPU use, set **Tick style** to `analog` (General tab) — exactly one repaint per second while keeping the seconds ring, arc and capsules. In `sweep` mode, lower **Repaint rate (fps)** instead.
 
 ## Development
 
 ### Project layout
 
 ```
-omarchy-kronos/
+omarchy-kronos-lite/
 ├── manifest.json          # Plugin metadata and settings schema
 ├── preview.png            # Marketplace preview screenshot
 ├── docs/                  # Extra reference screenshots for README
@@ -391,8 +426,8 @@ omarchy-shell shell rescanPlugins
 Before deploying, per the [Omarchy plugin development guide](https://plugins.omarchy.org/develop.html):
 
 ```bash
-omarchy plugin validate ~/Projects/omarchy-kronos
-qmllint -I /usr/share/omarchy/shell ~/Projects/omarchy-kronos/*.qml
+omarchy plugin validate ~/Projects/omarchy-kronos-lite
+qmllint -I /usr/share/omarchy/shell ~/Projects/omarchy-kronos-lite/*.qml
 ```
 
 Both should exit clean (no output, exit code 0). `qmllint` also works without `-I` (it just can't resolve `qs.Commons`/`qs.Ui` types then, so it checks less).
@@ -409,7 +444,7 @@ Rescan plugins and open the settings panel from the terminal:
 
 ```bash
 omarchy-shell shell rescanPlugins
-omarchy-shell shell summon mash2rafi.kronos "{}"
+omarchy-shell shell summon ra.kronos-lite "{}"
 ```
 
 Common issues:
@@ -444,8 +479,8 @@ Common issues:
 ## Uninstall
 
 ```bash
-omarchy plugin disable mash2rafi.kronos
-rm ~/.config/omarchy/plugins/mash2rafi.kronos   # skip if symlink — remove link only
+omarchy plugin disable ra.kronos-lite
+rm -rf ~/.config/omarchy/plugins/ra.kronos-lite   # skip if symlink — remove link only
 omarchy restart shell
 ```
 

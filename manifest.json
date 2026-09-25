@@ -3,8 +3,8 @@
   "id": "ra.kronos-lite",
   "name": "Kronos Lite",
   "version": "1.1.0-lite.1",
-  "author": "MASH2RAFI",
-  "description": "Fork of Kronos with an independent repaint-rate setting (targetFps) decoupled from showSeconds, to cut GPU/CPU cost without dropping the seconds ring or arc.",
+  "author": "abdullraa (fork of Kronos by MASH2RAFI)",
+  "description": "Fork of Kronos (MASH2RAFI) with an independent repaint-rate setting (targetFps) and a sweep/analog tickStyle, decoupling repaint cadence from showSeconds to cut GPU/CPU cost without dropping the seconds ring or arc.",
   "kinds": ["service", "panel", "bar-widget"],
   "keepLoaded": true,
   "entryPoints": {
@@ -13,7 +13,7 @@
     "barWidget": "BarWidget.qml"
   },
   "barWidget": {
-    "displayName": "Kronos",
+    "displayName": "Kronos Lite",
     "description": "Toggle the wallpaper clock on or off; right-click for settings.",
     "category": "Widgets",
     "allowMultiple": false,
