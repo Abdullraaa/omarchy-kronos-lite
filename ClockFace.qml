@@ -71,7 +71,7 @@ Item {
   readonly property real minuteCapsuleAngleOffsetRad: face.minuteCapsuleAngleOffset * Math.PI / 180
   readonly property real secondCapsuleAngleOffsetRad: face.secondCapsuleAngleOffset * Math.PI / 180
 
-  property real timeMs: Date.now()
+  property real timeMs: Clock.snappedMs(Date.now(), face.tickStyle)
 
   readonly property int ringTickMs: Clock.tickIntervalMs(
     face.screenRefreshRate, face.lowPower, face.targetFps
@@ -229,9 +229,9 @@ Item {
     if (face.active && face.tickStyle === "analog") face.stepAnalogTick()
   }
 
-  onRingTickMsChanged: ringTick.restart()
+  onRingTickMsChanged: if (face.tickStyle === "sweep") ringTick.restart()
   onActiveChanged: {
-    if (face.active) ringTick.restart()
+    if (face.active && face.tickStyle === "sweep") ringTick.restart()
     face.syncAnalogTick()
   }
   onTickStyleChanged: face.syncAnalogTick()
