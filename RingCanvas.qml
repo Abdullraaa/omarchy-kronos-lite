@@ -3,8 +3,16 @@ import qs.Commons
 import "ClockModel.js" as Clock
 import "ClockTheme.js" as Theme
 
-// Full ring dial — 60 ticks, numeric label at every tick (00–59).
-Canvas {
+// Minute and seconds dot rings, 60 ticks each with a numeric label (00–59).
+//
+// Nothing here repaints per tick. Each ring is drawn once, unrotated and at
+// full alpha, into a static texture (RingTexture); a static on-screen alpha
+// mask (RingMask) holds the fade/arc-clip that the old renderer applied per
+// dot. Both are fixed for a given config — the per-dot alpha depends only on
+// a dot's world angle (see ClockModel.ringDotAlphaAt). Per tick, only the two
+// rotation angles change, as ShaderEffect uniforms, and the GPU composites.
+// Static layers repaint only when one of their inputs changes.
+Item {
   id: canvas
 
   property real cx: 0
@@ -32,117 +40,162 @@ Canvas {
   property bool arcEmphasis: false
   property real arcEdgeFade: 0.05
 
-  renderStrategy: Canvas.Cooperative
-  renderTarget: Canvas.FramebufferObject
-
   readonly property bool arcClip: Clock.arcBoundsActive(canvas.arcFrom, canvas.arcTo)
-  readonly property real arcFromArg: canvas.arcClip ? canvas.arcFrom : null
-  readonly property real arcToArg: canvas.arcClip ? canvas.arcTo : null
 
-  function labelVisible(angle) {
-    return Clock.isRingLabelVisible(angle, canvas.fullRing, canvas.arcFromArg, canvas.arcToArg)
+  // Ring textures are rasterised at this multiple of the item size and
+  // minified (mipmapped) by the shader, so rotated label text stays crisp.
+  readonly property real supersample: 2
+
+  function repaint() {
+    guide.requestPaint()
+    minuteTexture.requestPaint()
+    secondTexture.requestPaint()
+    mask.requestPaint()
   }
 
-  function drawDotRing(ctx, radius, progress, dotColor, labelColor) {
-    var s = canvas.labelScale
-    var fontPx = Math.max(7, Math.round(8 * s))
-    var dotR = Math.max(1.1, 1.3 * s)
-    var strength = canvas.ringStrength
-    var rotation = Clock.ringRotationRad(progress, canvas.focusAngle)
-    var angles = Clock.ringAngles()
-    var fontFamilies = canvas.labelFont.split(",").map(function(f) { return "\"" + f.trim() + "\"" }).join(", ")
-    var font = "500 " + fontPx + "px " + fontFamilies
-    var labelRBase = radius + Math.round(10 * s)
-    var clipArc = canvas.arcClip
+  // Fixed on-screen guide strokes (full-ring guide, arc guides). Not masked.
+  Canvas {
+    id: guide
+    anchors.fill: parent
+    renderStrategy: Canvas.Cooperative
+    renderTarget: Canvas.FramebufferObject
 
-    ctx.save()
-    ctx.translate(canvas.cx, canvas.cy)
-    ctx.rotate(rotation)
-    ctx.translate(-canvas.cx, -canvas.cy)
-    ctx.font = font
-    ctx.textAlign = "center"
-    ctx.textBaseline = "middle"
+    readonly property string paintKey: [
+      canvas.width, canvas.height, canvas.cx, canvas.cy, canvas.minuteRadius, canvas.secondRadius,
+      canvas.showSeconds, canvas.chromeScale, canvas.ringStrength, canvas.arcEmphasis,
+      canvas.showGuideRing, canvas.fullRing, canvas.arcFrom, canvas.arcTo, canvas.ringColor
+    ].join("|")
+    onPaintKeyChanged: requestPaint()
 
-    for (var i = 0; i < 60; i++) {
-      var angle = angles[i]
-      var worldAngle = Clock.normalizeAngle0(angle + rotation)
-      if (clipArc && !Clock.dotOnArc(worldAngle, canvas.arcFrom, canvas.arcTo))
-        continue
-      var onFace = canvas.fullRing || clipArc || canvas.labelVisible(worldAngle)
-      var fade = clipArc ? 1 : Clock.ringDotFade(i, progress, onFace)
-      var px = canvas.cx + Math.cos(angle) * radius
-      var py = canvas.cy + Math.sin(angle) * radius
-      var alpha = Clock.ringDotAlpha(true, fade, onFace, strength)
-      if (clipArc)
-        alpha *= Clock.ringEdgeMeetFade(worldAngle, canvas.arcFrom, canvas.arcTo, canvas.arcEdgeFade)
-      if (clipArc && canvas.arcEmphasis)
-        alpha = Math.min(1, alpha * 1.15)
+    onPaint: {
+      var ctx = getContext("2d")
+      ctx.reset()
+      ctx.clearRect(0, 0, width, height)
 
-      ctx.beginPath()
-      ctx.fillStyle = Theme.ink(dotColor, alpha)
-      ctx.arc(px, py, dotR, 0, Math.PI * 2)
-      ctx.fill()
+      var outerR = canvas.showSeconds ? canvas.secondRadius : canvas.minuteRadius
+      var guideR = outerR + Math.round(16 * canvas.chromeScale) * 0.42
+      var lw = Math.max(1, canvas.chromeScale * 0.8)
+      var guideAlpha = 0.14 * canvas.ringStrength * (canvas.arcEmphasis ? 2 : 1)
 
-      if (canvas.showLabels) {
-        var labelR = labelRBase
-        ctx.save()
-        ctx.translate(canvas.cx + Math.cos(angle) * labelR, canvas.cy + Math.sin(angle) * labelR)
-        ctx.rotate(angle + Math.PI / 2)
-        var labelAlpha = onFace ? (0.44 + fade * 0.52) : (0.24 + fade * 0.28)
-        if (clipArc)
-          labelAlpha *= Clock.ringEdgeMeetFade(worldAngle, canvas.arcFrom, canvas.arcTo, canvas.arcEdgeFade)
-        if (clipArc && canvas.arcEmphasis)
-          labelAlpha = Math.min(1, labelAlpha * 1.12)
-        ctx.fillStyle = Theme.ink(labelColor, Math.min(1, labelAlpha * strength))
-        ctx.fillText(Clock.localizeDigits(Clock.pad2(i), canvas.numerals), 0, 0)
-        ctx.restore()
-      }
-    }
-
-    ctx.restore()
-  }
-
-  function repaint() { requestPaint() }
-
-  onPaint: {
-    var ctx = getContext("2d")
-    ctx.reset()
-    ctx.clearRect(0, 0, width, height)
-
-    var outerR = canvas.showSeconds ? canvas.secondRadius : canvas.minuteRadius
-    var guideR = outerR + Math.round(16 * canvas.chromeScale) * 0.42
-    var lw = Math.max(1, canvas.chromeScale * 0.8)
-    var guideAlpha = 0.14 * canvas.ringStrength * (canvas.arcEmphasis ? 2 : 1)
-
-    if (canvas.showGuideRing && canvas.fullRing) {
-      ctx.beginPath()
-      ctx.strokeStyle = Theme.ink(canvas.ringColor, 0.07 * canvas.ringStrength)
-      ctx.lineWidth = lw
-      ctx.arc(canvas.cx, canvas.cy, guideR, 0, Math.PI * 2)
-      ctx.stroke()
-    }
-
-    if (canvas.arcClip) {
-      var guideFrom = Clock.normalizeAngle0(canvas.arcFrom)
-      var guideTo = Clock.normalizeAngle0(canvas.arcTo)
-      var arcLw = lw * (canvas.arcEmphasis ? 1.55 : 1)
-      ctx.beginPath()
-      ctx.strokeStyle = Theme.ink(canvas.ringColor, guideAlpha)
-      ctx.lineWidth = arcLw
-      ctx.arc(canvas.cx, canvas.cy, guideR, guideFrom, guideTo)
-      ctx.stroke()
-      if (canvas.arcEmphasis) {
-        var innerGuideR = canvas.minuteRadius + Math.round(16 * canvas.chromeScale) * 0.42
+      if (canvas.showGuideRing && canvas.fullRing) {
         ctx.beginPath()
-        ctx.strokeStyle = Theme.ink(canvas.ringColor, guideAlpha * 0.75)
-        ctx.lineWidth = Math.max(1, arcLw * 0.9)
-        ctx.arc(canvas.cx, canvas.cy, innerGuideR, guideFrom, guideTo)
+        ctx.strokeStyle = Theme.ink(canvas.ringColor, 0.07 * canvas.ringStrength)
+        ctx.lineWidth = lw
+        ctx.arc(canvas.cx, canvas.cy, guideR, 0, Math.PI * 2)
         ctx.stroke()
       }
-    }
 
-    canvas.drawDotRing(ctx, canvas.minuteRadius, canvas.minuteProgress, canvas.ringColor, canvas.minuteLabelColor)
-    if (canvas.showSeconds)
-      canvas.drawDotRing(ctx, canvas.secondRadius, canvas.secondProgress, canvas.secondRingColor, canvas.secondLabelColor)
+      if (canvas.arcClip) {
+        var guideFrom = Clock.normalizeAngle0(canvas.arcFrom)
+        var guideTo = Clock.normalizeAngle0(canvas.arcTo)
+        var arcLw = lw * (canvas.arcEmphasis ? 1.55 : 1)
+        ctx.beginPath()
+        ctx.strokeStyle = Theme.ink(canvas.ringColor, guideAlpha)
+        ctx.lineWidth = arcLw
+        ctx.arc(canvas.cx, canvas.cy, guideR, guideFrom, guideTo)
+        ctx.stroke()
+        if (canvas.arcEmphasis) {
+          var innerGuideR = canvas.minuteRadius + Math.round(16 * canvas.chromeScale) * 0.42
+          ctx.beginPath()
+          ctx.strokeStyle = Theme.ink(canvas.ringColor, guideAlpha * 0.75)
+          ctx.lineWidth = Math.max(1, arcLw * 0.9)
+          ctx.arc(canvas.cx, canvas.cy, innerGuideR, guideFrom, guideTo)
+          ctx.stroke()
+        }
+      }
+    }
+  }
+
+  RingTexture {
+    id: minuteTexture
+    width: canvas.width * canvas.supersample
+    height: canvas.height * canvas.supersample
+    supersample: canvas.supersample
+    cx: canvas.cx
+    cy: canvas.cy
+    radius: canvas.minuteRadius
+    dotColor: canvas.ringColor
+    labelColor: canvas.minuteLabelColor
+    showLabels: canvas.showLabels
+    labelScale: canvas.labelScale
+    labelFont: canvas.labelFont
+    numerals: canvas.numerals
+  }
+
+  RingTexture {
+    id: secondTexture
+    width: canvas.width * canvas.supersample
+    height: canvas.height * canvas.supersample
+    supersample: canvas.supersample
+    cx: canvas.cx
+    cy: canvas.cy
+    radius: canvas.secondRadius
+    dotColor: canvas.secondRingColor
+    labelColor: canvas.secondLabelColor
+    showLabels: canvas.showLabels
+    labelScale: canvas.labelScale
+    labelFont: canvas.labelFont
+    numerals: canvas.numerals
+  }
+
+  RingMask {
+    id: mask
+    width: canvas.width
+    height: canvas.height
+    cx: canvas.cx
+    cy: canvas.cy
+    minuteRadius: canvas.minuteRadius
+    secondRadius: canvas.secondRadius
+    showSeconds: canvas.showSeconds
+    labelScale: canvas.labelScale
+    focusAngle: canvas.focusAngle
+    fullRing: canvas.fullRing
+    arcFrom: canvas.arcFrom
+    arcTo: canvas.arcTo
+    ringStrength: canvas.ringStrength
+    arcEmphasis: canvas.arcEmphasis
+    arcEdgeFade: canvas.arcEdgeFade
+  }
+
+  ShaderEffectSource {
+    id: minuteSource
+    sourceItem: minuteTexture
+    hideSource: true
+    mipmap: true
+    smooth: true
+    visible: false
+  }
+
+  ShaderEffectSource {
+    id: secondSource
+    sourceItem: secondTexture
+    hideSource: true
+    mipmap: true
+    smooth: true
+    visible: false
+  }
+
+  ShaderEffectSource {
+    id: maskSource
+    sourceItem: mask
+    hideSource: true
+    smooth: true
+    visible: false
+  }
+
+  ShaderEffect {
+    anchors.fill: parent
+    blending: true
+    fragmentShader: Qt.resolvedUrl("shaders/ring.frag.qsb")
+
+    property var minuteTex: minuteSource
+    property var secondTex: secondSource
+    property var maskTex: maskSource
+    property point center: Qt.point(canvas.cx, canvas.cy)
+    property size size: Qt.size(Math.max(1, canvas.width), Math.max(1, canvas.height))
+    // The only per-tick inputs.
+    property real minuteAngle: Clock.ringRotationRad(canvas.minuteProgress, canvas.focusAngle)
+    property real secondAngle: Clock.ringRotationRad(canvas.secondProgress, canvas.focusAngle)
+    property real showSecond: canvas.showSeconds ? 1 : 0
   }
 }

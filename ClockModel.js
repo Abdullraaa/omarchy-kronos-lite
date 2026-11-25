@@ -1047,3 +1047,38 @@ function isRingLabelVisible(angle, fullRing, arcFrom, arcTo) {
   if (fullRing) return true
   return dotOnArc(angle, arcFrom, arcTo)
 }
+
+// Per-world-angle ring alpha, for RingCanvas's static mask. The old per-frame
+// renderer evaluated these formulas once per dot at the dot's world angle;
+// every input is either fixed config or the world angle itself (a dot's
+// index relative to progress is (worldAngle - focusAngle) / tickStep), so
+// the alpha field is fixed on screen while the ring texture rotates under it.
+// arcFrom/arcTo are null/NaN when no arc clip applies.
+function _ringAlphaInputs(worldAngle, focusAngle, arcFrom, arcTo, fullRing) {
+  var clipArc = arcBoundsActive(arcFrom, arcTo)
+  var fromArg = clipArc ? arcFrom : null
+  var toArg = clipArc ? arcTo : null
+  if (clipArc && !dotOnArc(worldAngle, arcFrom, arcTo)) return null
+  var onFace = fullRing || clipArc || isRingLabelVisible(worldAngle, fullRing, fromArg, toArg)
+  var relTicks = normalizeAngle0(worldAngle - focusAngle) / (Math.PI * 2 / 60)
+  var fade = clipArc ? 1 : ringDotFade(relTicks, 0, onFace)
+  return { clipArc: clipArc, onFace: onFace, fade: fade }
+}
+
+function ringDotAlphaAt(worldAngle, focusAngle, arcFrom, arcTo, fullRing, strength, arcEmphasis, arcEdgeFade) {
+  var k = _ringAlphaInputs(worldAngle, focusAngle, arcFrom, arcTo, fullRing)
+  if (!k) return 0
+  var alpha = ringDotAlpha(true, k.fade, k.onFace, strength)
+  if (k.clipArc) alpha *= ringEdgeMeetFade(worldAngle, arcFrom, arcTo, arcEdgeFade)
+  if (k.clipArc && arcEmphasis) alpha = Math.min(1, alpha * 1.15)
+  return alpha
+}
+
+function ringLabelAlphaAt(worldAngle, focusAngle, arcFrom, arcTo, fullRing, strength, arcEmphasis, arcEdgeFade) {
+  var k = _ringAlphaInputs(worldAngle, focusAngle, arcFrom, arcTo, fullRing)
+  if (!k) return 0
+  var labelAlpha = k.onFace ? (0.44 + k.fade * 0.52) : (0.24 + k.fade * 0.28)
+  if (k.clipArc) labelAlpha *= ringEdgeMeetFade(worldAngle, arcFrom, arcTo, arcEdgeFade)
+  if (k.clipArc && arcEmphasis) labelAlpha = Math.min(1, labelAlpha * 1.12)
+  return Math.min(1, labelAlpha * strength)
+}

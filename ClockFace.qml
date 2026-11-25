@@ -201,7 +201,6 @@ Item {
 
   function refreshTime() {
     face.timeMs = Clock.snappedMs(Date.now(), face.tickStyle)
-    rings.repaint()
   }
 
   Timer {
