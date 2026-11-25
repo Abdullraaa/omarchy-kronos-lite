@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Services.UPower
 import Quickshell.Wayland
 import qs.Commons
 import qs.Ui
@@ -31,6 +32,7 @@ Item {
     || minuteCapsuleFontField.popupOpen
     || secondCapsuleFontField.popupOpen
     || tickStyleField.popupOpen
+    || numeralsField.popupOpen
   readonly property color scrim: Color.menu.scrim
   readonly property color cardBackground: Color.popups.background
   readonly property var cardBorderSpec: Border.surfaceSpec(
@@ -65,6 +67,7 @@ Item {
   readonly property var accentOptions: Theme.accentModeOptions()
   readonly property var layoutStyleOptions: Clock.layoutStyleOptions()
   readonly property var tickStyleOptions: Clock.tickStyleOptions()
+  readonly property var numeralsOptions: Clock.numeralsOptions()
   readonly property var screenModeOptions: Clock.screenModeOptions()
 
   property string settingsPage: "general"
@@ -400,7 +403,8 @@ Item {
                   availableWidth: 560
                   use24h: root.draft.use24h
                   showSeconds: root.draft.showSeconds
-                  tickStyle: root.draft.tickStyle
+                  tickStyle: Clock.effectiveTickStyle(root.draft.tickStyle, UPower.onBattery)
+                  numerals: root.draft.numerals
                   showDate: root.draft.showDate
                   accentMode: root.draft.accentMode
                   clockFont: root.draft.clockFont
@@ -666,7 +670,10 @@ Item {
                 label: "Repaint rate (fps)"
                 helpText: root.draft.tickStyle === "analog"
                   ? "Not used in Analog tick style — the clock repaints exactly once per second regardless of this value."
-                  : "How often the rings redraw per second — independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; positions stay exact, they just update less often. The preview above is throttled while the panel is open and will not reflect this setting — check the clock itself."
+                  : (root.draft.tickStyle === "auto"
+                    ? "Auto: used while on AC power; on battery the clock ticks exactly once per second instead. "
+                    : "")
+                    + "How often the rings redraw per second — independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; positions stay exact, they just update less often. The preview above is throttled while the panel is open and will not reflect this setting — check the clock itself."
                 minimum: 4
                 maximum: 60
                 step: 1
@@ -690,6 +697,17 @@ Item {
                 options: root.tickStyleOptions
                 onChanged: function(v) {
                   root.patchDraft({ tickStyle: Clock.normalizeTickStyle(v) })
+                }
+              }
+
+              Dropdown {
+                id: numeralsField
+                width: parent.width
+                label: "Numerals"
+                value: root.draft.numerals
+                options: root.numeralsOptions
+                onChanged: function(v) {
+                  root.patchDraft({ numerals: Clock.normalizeNumerals(v) })
                 }
               }
 

@@ -6,7 +6,31 @@ function pad2(n) {
   return (n < 10 ? "0" : "") + n
 }
 
-function partsAt(ms, use24h) {
+var NUMERALS = ["western", "arabic"]
+
+function normalizeNumerals(value) {
+  var n = String(value || "western").toLowerCase()
+  return NUMERALS.indexOf(n) >= 0 ? n : "western"
+}
+
+function numeralsOptions() {
+  return [
+    { value: "western", label: "Western — 0 1 2 3 (default)" },
+    { value: "arabic", label: "Arabic — \u0660 \u0661 \u0662 \u0663" }
+  ]
+}
+
+// Maps ASCII digits to Eastern Arabic-Indic digits (U+0660..U+0669); any other
+// character, and every character under "western", passes through unchanged.
+function localizeDigits(str, numerals) {
+  str = String(str)
+  if (numerals !== "arabic") return str
+  return str.replace(/[0-9]/g, function (d) {
+    return String.fromCharCode(0x0660 + d.charCodeAt(0) - 48)
+  })
+}
+
+function partsAt(ms, use24h, numerals) {
   var d = new Date(ms)
   var h = d.getHours()
   var minutes = d.getMinutes()
@@ -17,11 +41,12 @@ function partsAt(ms, use24h) {
   var minuteFloat = minutes + secondFloat / 60
 
   return {
-    hourLabel: use24h ? String(h) : String(h12),
-    mm: pad2(minutes),
-    ss: pad2(seconds),
+    hourLabel: localizeDigits(use24h ? h : h12, numerals),
+    mm: localizeDigits(pad2(minutes), numerals),
+    ss: localizeDigits(pad2(seconds), numerals),
     ampm: h < 12 ? "AM" : "PM",
-    dateShort: d.getDate() + " " + MONTHS[d.getMonth()] + " " + d.getFullYear(),
+    dateShort: localizeDigits(d.getDate(), numerals) + " " + MONTHS[d.getMonth()] + " "
+      + localizeDigits(d.getFullYear(), numerals),
     dayName: Qt.formatDate(d, "dddd").toUpperCase(),
     minuteFloat: minuteFloat,
     secondFloat: secondFloat
@@ -111,7 +136,7 @@ function clampTargetFps(value) {
   return clampNumber(value, 15, 4, 60, true)
 }
 
-var TICK_STYLES = ["sweep", "analog"]
+var TICK_STYLES = ["sweep", "analog", "auto"]
 
 function normalizeTickStyle(value) {
   var style = String(value || "analog").toLowerCase()
@@ -121,8 +146,18 @@ function normalizeTickStyle(value) {
 function tickStyleOptions() {
   return [
     { value: "analog", label: "Analog — exact 1-per-second tick, lowest cost (default)" },
-    { value: "sweep", label: "Sweep — smooth motion, configurable fps" }
+    { value: "sweep", label: "Sweep — smooth motion, configurable fps" },
+    { value: "auto", label: "Auto — sweep on AC power, analog on battery" }
   ]
+}
+
+// Resolves "auto" against the power source. ClockFace only ever receives
+// "sweep" or "analog": resolving here keeps its two-timer gating unaware of
+// "auto", so a power change is just an ordinary tickStyle change to it.
+function effectiveTickStyle(style, onBattery) {
+  var s = normalizeTickStyle(style)
+  if (s !== "auto") return s
+  return onBattery ? "analog" : "sweep"
 }
 
 function defaultArcDegreesForPosition(position) {
@@ -302,6 +337,7 @@ function readSettings(entry) {
     targetFps: clampTargetFps(
       entry.targetFps !== undefined && entry.targetFps !== null ? entry.targetFps : 15),
     tickStyle: normalizeTickStyle(entry.tickStyle),
+    numerals: normalizeNumerals(entry.numerals),
     screenMode: normalizeScreenMode(String(entry.screenMode || "all")),
     selectedMonitors: normalizeMonitorNames(entry.selectedMonitors),
     perMonitorScale: entry.perMonitorScale === true,
@@ -365,6 +401,7 @@ function settingsToEntry(pluginId, settings) {
     ringTransparency: settings.ringTransparency,
     targetFps: settings.targetFps,
     tickStyle: settings.tickStyle,
+    numerals: settings.numerals,
     minuteRingOpacity: settings.ringTransparency,
     secondRingOpacity: settings.ringTransparency,
     screenMode: settings.screenMode,

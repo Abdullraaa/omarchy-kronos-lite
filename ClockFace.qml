@@ -34,6 +34,7 @@ Item {
   property bool lowPower: false
   property real targetFps: 15
   property string tickStyle: "sweep"
+  property string numerals: "western"
   property real screenRefreshRate: 60
 
   property string hourColor: ""
@@ -83,7 +84,7 @@ Item {
   readonly property real ringLabelScale: Clock.clampTextScale(face.ringLabelScaleFactor)
   readonly property real minuteCapsuleScale: Clock.clampTextScale(face.minuteCapsuleScaleFactor)
   readonly property real secondCapsuleScale: Clock.clampTextScale(face.secondCapsuleScaleFactor)
-  readonly property var now: Clock.partsAt(face.timeMs, face.use24h)
+  readonly property var now: Clock.partsAt(face.timeMs, face.use24h, face.numerals)
   readonly property var spec: Clock.layoutSpec(face.position, face.centerLayout, face.ringArcDegrees)
   readonly property bool fullRing: face.spec.fullRing
   readonly property real ringFocusAngle: face.spec.focusAngle
@@ -269,6 +270,7 @@ Item {
       labelScale: face.ringLabelScale
       chromeScale: face.layoutScale
       labelFont: face.labelFont
+      numerals: face.numerals
       arcFrom: face.ringArc.from
       arcTo: face.ringArc.to
       showGuideRing: face.spec.showGuideRing
@@ -284,6 +286,7 @@ Item {
       function onRingStrengthChanged() { face.markRingDirty() }
       function onShowSecondsChanged() { face.markRingDirty() }
       function onLabelFontChanged() { face.markRingDirty() }
+      function onNumeralsChanged() { face.markRingDirty() }
       function onShowRingLabelsChanged() { face.markRingDirty() }
       function onShowRingsChanged() { face.markRingDirty() }
       function onRingRotationOffsetRadChanged() { face.markRingDirty() }

@@ -148,14 +148,21 @@
       "type": "number",
       "label": "Repaint rate (fps)",
       "defaultValue": 15,
-      "description": "How often the rings redraw per second, independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; the ring position is always exact for the instant it draws, just updated less often. Range 4-60. Ignored when Tick style is set to Analog, which is the default."
+      "description": "How often the rings redraw per second, independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; the ring position is always exact for the instant it draws, just updated less often. Range 4-60. Used by Sweep, and by Auto while on AC power; ignored by Analog, which is the default."
     },
     {
       "key": "tickStyle",
       "type": "string",
       "label": "Tick style",
       "defaultValue": "analog",
-      "description": "analog (default) snaps to each whole second and repaints exactly once per second — targetFps is ignored — for a classic analog-clock tick and the lowest possible CPU/GPU cost. sweep interpolates ring position continuously between whole seconds at the Repaint rate (fps) above."
+      "description": "analog (default) snaps to each whole second and repaints exactly once per second — targetFps is ignored — for a classic analog-clock tick and the lowest possible CPU/GPU cost. sweep interpolates ring position continuously between whole seconds at the Repaint rate (fps) above. auto uses sweep while on AC power and analog while on battery."
+    },
+    {
+      "key": "numerals",
+      "type": "string",
+      "label": "Numerals",
+      "defaultValue": "western",
+      "description": "western (default) shows digits as 0-9. arabic shows every digit on the clock — hour, minutes, seconds, ring labels and date — as Eastern Arabic numerals \u0660-\u0669."
     },
     {
       "key": "minuteRingOpacity",

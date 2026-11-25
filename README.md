@@ -33,7 +33,8 @@ All shots use `top-right` with a vertical bar — hour against the bar, rings cu
 - **Multi-monitor** — one wallpaper-layer clock per output; each screen sizes and positions independently (portrait, ultrawide, mixed resolutions)
 - **Screen-aware sizing** — outer ring scales from each monitor's width and height (default 29% of screen height, adjustable 25–55%)
 - **Bar-aware placement** — auto-insets from the Omarchy bar on the anchored edge, per screen
-- **Independent repaint rate** — ring repaint cadence is set by `targetFps` (default 15, range 4–60) and `tickStyle`, not by whether the seconds ring is shown
+- **Independent repaint rate** — ring repaint cadence is set by `targetFps` (default 15, range 4–60) and `tickStyle`, not by whether the seconds ring is shown; `tickStyle: auto` sweeps on AC power and ticks once per second on battery
+- **Arabic numerals** — `numerals: arabic` renders every digit (hour, capsules, ring labels, date) as Eastern Arabic numerals ٠–٩; `western` (default) keeps 0–9 (**General** tab)
 - **Theme integration** — uses Omarchy palette (`foreground`, `background`, `muted`, `accent`) with live theme updates; **Contrast** mode draws rings opposite the theme background for wallpaper visibility
 - **Ring transparency** — single slider fades both rings (0–100%)
 - **Independent sizing** — layout, ring geometry, text, and fonts are separate controls (see [Sizing](#sizing))
@@ -317,8 +318,8 @@ cost. These two settings separate them.
 
 | Setting | Values | Effect |
 |---|---|---|
-| **Repaint rate (fps)** (`targetFps`) | `4`–`60`, default `15` | How often the rings redraw per second in `sweep` mode. Position is always exact for the instant it draws — just updated less often. Ignored when `tickStyle` is `analog`. |
-| **Tick style** (`tickStyle`) | `analog` (default), `sweep` | `analog` snaps to each whole second and repaints exactly once per second, for a classic analog-clock tick and the lowest cost. `sweep` interpolates ring position continuously between whole seconds at `targetFps`. |
+| **Repaint rate (fps)** (`targetFps`) | `4`–`60`, default `15` | How often the rings redraw per second in `sweep` mode. Position is always exact for the instant it draws — just updated less often. Ignored when `tickStyle` is `analog`, and by `auto` while on battery. |
+| **Tick style** (`tickStyle`) | `analog` (default), `sweep`, `auto` | `analog` snaps to each whole second and repaints exactly once per second, for a classic analog-clock tick and the lowest cost. `sweep` interpolates ring position continuously between whole seconds at `targetFps`. `auto` follows the power source via UPower: `sweep` on AC, `analog` on battery, switching live when you plug or unplug. A machine with no battery is always on AC, so `auto` means `sweep` there. |
 
 Both are on the **General** tab. The fps slider greys out when `tickStyle` is
 `analog`, since it has no effect there — and because `analog` is the default,

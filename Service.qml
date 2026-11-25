@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Services.UPower
 import Quickshell.Wayland
 import qs.Commons
 import qs.Ui
@@ -260,7 +261,8 @@ Item {
           use24h: root.cfg.use24h
           showSeconds: root.cfg.showSeconds
           targetFps: root.cfg.targetFps
-          tickStyle: root.cfg.tickStyle
+          tickStyle: Clock.effectiveTickStyle(root.cfg.tickStyle, UPower.onBattery)
+          numerals: root.cfg.numerals
           showDate: root.cfg.showDate
           accentMode: root.cfg.accentMode
           clockFont: root.cfg.clockFont

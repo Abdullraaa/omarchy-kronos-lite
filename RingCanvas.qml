@@ -25,6 +25,7 @@ Canvas {
   property real labelScale: 1
   property real chromeScale: 1
   property string labelFont: Style.font.family
+  property string numerals: "western"
   property real arcFrom: NaN
   property real arcTo: NaN
   property bool showGuideRing: false
@@ -93,7 +94,7 @@ Canvas {
         if (clipArc && canvas.arcEmphasis)
           labelAlpha = Math.min(1, labelAlpha * 1.12)
         ctx.fillStyle = Theme.ink(labelColor, Math.min(1, labelAlpha * strength))
-        ctx.fillText(Clock.pad2(i), 0, 0)
+        ctx.fillText(Clock.localizeDigits(Clock.pad2(i), canvas.numerals), 0, 0)
         ctx.restore()
       }
     }
