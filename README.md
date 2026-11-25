@@ -52,11 +52,17 @@ All shots use `top-right` with a vertical bar — hour against the bar, rings cu
 
 ## Installation
 
-This fork is not published to a remote of its own — `origin` still points at
-upstream. `omarchy plugin add <url>` therefore installs *upstream*, not this fork.
-Install it from the local working copy instead.
+This fork lives at <https://github.com/Abdullraaa/omarchy-kronos-lite>. Its plugin
+id is `ra.kronos-lite`, so it installs alongside upstream Kronos
+(`mash2rafi.kronos`) rather than replacing it. Disable one of the two if you
+don't want two clocks.
 
-### Option A — Copy into plugins directory (how this is actually installed)
+```bash
+omarchy plugin add https://github.com/Abdullraaa/omarchy-kronos-lite.git --enable --yes
+omarchy restart shell
+```
+
+### Option A — Copy a local working copy into the plugins directory
 
 ```bash
 rsync -a --delete --exclude='.git' \

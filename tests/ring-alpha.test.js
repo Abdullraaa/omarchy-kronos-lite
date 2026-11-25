@@ -1,6 +1,6 @@
 // Run: node tests/ring-alpha.test.js
 // Compares the new per-angle mask alpha against the OLD per-dot loop from
-// RingCanvas.qml (git 2ed29eb drawDotRing), transcribed verbatim. Random
+// RingCanvas.qml (git f09d328 drawDotRing), transcribed verbatim. Random
 // progress per run; exits non-zero if any dot/label alpha differs by > 1e-9.
 const fs=require("fs"); const src=fs.readFileSync(require("path").join(__dirname, "..", "ClockModel.js"),"utf8").replace(".pragma library","");
 const C={}; new Function("Qt", src+"\nObject.assign(this,{ringDotAlphaAt,ringLabelAlphaAt,ringRotationRad,ringAngles,normalizeAngle0,dotOnArc,isRingLabelVisible,ringDotFade,ringDotAlpha,ringEdgeMeetFade,arcBoundsActive,layoutSpec,resolvedArcBounds});").call(C,{formatDate:()=>""});
