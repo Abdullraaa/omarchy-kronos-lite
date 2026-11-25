@@ -319,7 +319,7 @@ cost. These two settings separate them.
 | Setting | Values | Effect |
 |---|---|---|
 | **Repaint rate (fps)** (`targetFps`) | `4`–`60`, default `15` | How often the rings redraw per second in `sweep` mode. Position is always exact for the instant it draws — just updated less often. Ignored when `tickStyle` is `analog`, and by `auto` while on battery. |
-| **Tick style** (`tickStyle`) | `analog` (default), `sweep`, `auto` | `analog` snaps to each whole second and repaints exactly once per second, for a classic analog-clock tick and the lowest cost. `sweep` interpolates ring position continuously between whole seconds at `targetFps`. `auto` follows the power source via UPower: `sweep` on AC, `analog` on battery, switching live when you plug or unplug. A machine with no battery is always on AC, so `auto` means `sweep` there. |
+| **Tick style** (`tickStyle`) | `analog` (default), `sweep`, `auto` | `analog` snaps to each whole second and repaints exactly once per second, for a classic analog-clock tick and the lowest cost. `sweep` interpolates ring position continuously between whole seconds at `targetFps`. `auto` follows the power source via UPower: `sweep` on AC, `analog` on battery, switching live when you plug or unplug. A machine with no battery is always on AC, so `auto` means `sweep` there. Any sweep also drops to `analog` while windows are open on that monitor's workspace. |
 
 Both are on the **General** tab. The fps slider greys out when `tickStyle` is
 `analog`, since it has no effect there — and because `analog` is the default,
@@ -356,7 +356,7 @@ There is no per-monitor position config — the same position and scale apply to
 
 The clock runs **inside quickshell** (same process as the bar and other shell plugins) — there is no separate clock process.
 
-Rings are drawn with **`RingCanvas.qml`** — 60 ticks per ring, labeled 00–59 at every tick. Repaint cadence is set by `targetFps` and `tickStyle` and is **independent of `showSeconds`**: turning the seconds ring off changes what is drawn, not how often. The effective interval is `1000 / min(60, monitorHz, targetFps)` in `sweep` mode, or exactly one repaint per wall-clock second in `analog` mode. The settings preview uses a slower fixed tick (`lowPower`, 500 ms) to save CPU while editing, so the preview does not reflect the **Repaint rate (fps)** slider — judge that one on the clock itself.
+Rings are drawn with **`RingCanvas.qml`** — 60 ticks per ring, labeled 00–59 at every tick. Each ring is rasterised **once** into a static texture, and a static alpha mask holds the arc clip and fades; a small shader rotates the textures on the GPU. So a tick only changes two rotation angles: no redraw, no text layout. Measured in an isolated harness with sweep at 15 fps, that took the clock from ~70 % of a core to ~4 %. Repaint cadence is set by `targetFps` and `tickStyle` and is **independent of `showSeconds`**: turning the seconds ring off changes what is drawn, not how often. The effective interval is `1000 / min(60, monitorHz, targetFps)` in `sweep` mode, or exactly one repaint per wall-clock second in `analog` mode. The settings preview uses a slower fixed tick (`lowPower`, 500 ms) to save CPU while editing, so the preview does not reflect the **Repaint rate (fps)** slider — judge that one on the clock itself.
 
 | | Omarchy shell + clock | Omarchy shell only | Clock delta (approx.) |
 |---|---|---|---|
@@ -382,6 +382,8 @@ print(rss, f"CPU: {cpu:.1f}% of one core (~{cpu/ncpu:.1f}% of all cores)")
 PY
 ```
 
+Any sweep (explicit, or `auto` on AC) drops to analog while windows are open on that monitor's workspace, and sweeps again once the workspace is empty.
+
 For the lowest CPU use, set **Tick style** to `analog` (General tab) — exactly one repaint per second while keeping the seconds ring, arc and capsules. In `sweep` mode, lower **Repaint rate (fps)** instead.
 
 ## Development
@@ -398,7 +400,10 @@ omarchy-kronos-lite/
 ├── Service.qml            # Layer-shell window, placement, config wiring
 ├── BarWidget.qml          # Bar toggle + settings shortcut
 ├── ClockFace.qml   # Clock UI: rings, capsules, hour, date
-├── RingCanvas.qml         # 60-tick ring dial (minute + second rings)
+├── RingCanvas.qml         # Ring dial: static textures + mask, rotated by a shader
+├── RingTexture.qml        # One ring's dots + labels, drawn once (2x supersampled)
+├── RingMask.qml           # Static on-screen alpha mask (arc clip, fades)
+├── shaders/ring.frag(.qsb) # Rotate + mask shader; recompile .qsb after editing
 ├── DateColumn.qml         # Shared date/weekday/AM-PM column
 ├── TimeCapsule.qml        # Minute/second pill capsule
 ├── ShellConfigWatcher.qml # Reads shell.json directly; live-updates around a host caching limitation
@@ -476,7 +481,7 @@ Common issues:
 - **`SettingsSlider.qml`** — reusable labeled slider row (`import qs.Ui` for `PanelSlider`). Used on General, Fonts & sizes, and Components tabs. Same-directory QML components load by type name — no extra import line needed in the panel.
 - **`ColorField.qml`** — hex color override field: swatch + validated text input + an **Auto** button that clears back to `""` (theme-derived). Used throughout the Components tab.
 - **`ClockFace.qml`** — composes rings, hour/date column, and capsules. Layout/text scales are independent properties; ring arc comes from `Clock.layoutSpec(position, centerLayout, ringArcDegrees)`; per-component color/font overrides are merged in via `Theme.applyOverrides()`.
-- **`RingCanvas.qml`** — Canvas ring dial with independent minute/second dot colors and label colors, separate `labelScale` (tick labels) and `chromeScale` (guide strokes), and a `showLabels` toggle. Arc clipping via `arcFrom` / `arcTo`.
+- **`RingCanvas.qml`** — ring dial with independent minute/second dot colors and label colors, separate `labelScale` (tick labels) and `chromeScale` (guide strokes), and a `showLabels` toggle. Arc clipping via `arcFrom` / `arcTo`. Internally: a `RingTexture` per ring (unrotated, full alpha), a `RingMask` (per-world-angle alpha from `Clock.ringDotAlphaAt` / `ringLabelAlphaAt`, with the minute ring in red and seconds in green), and a `ShaderEffect` (`shaders/ring.frag.qsb`) that rotates and masks them. Only the two rotation angles change per tick; the static layers repaint only when their inputs change. After editing `shaders/ring.frag`, run `/usr/lib/qt6/bin/qsb --qt6 -o shaders/ring.frag.qsb shaders/ring.frag`.
 - **`ClockModel.js`** — `.pragma library` module: time parts, `readSettings` / `mergeSettings` / `settingsToEntry`, placement geometry, layout specs, arc rules, ring math, and the saved-layout preset functions (`saveLayoutPreset`, `applyLayoutSnapshot`, `updateLayoutPreset`, `removeLayoutPreset`).
 - **`ClockTheme.js`** — `accentMode` palette mapping (contrast / accent / theme / mono) plus `applyOverrides()` for layering per-component color overrides on top of it.
 - **`PluginConfig.js`** — `entryOrDefault()` and `defaultSettings()` helpers, plus `findEntryInBarConfig()` (the raw-object lookup `ShellConfigWatcher` and `findBarEntry` both use).
