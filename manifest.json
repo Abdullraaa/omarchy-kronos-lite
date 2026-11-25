@@ -155,7 +155,7 @@
       "type": "string",
       "label": "Tick style",
       "defaultValue": "analog",
-      "description": "analog (default) snaps to each whole second and repaints exactly once per second — targetFps is ignored — for a classic analog-clock tick and the lowest possible CPU/GPU cost. sweep interpolates ring position continuously between whole seconds at the Repaint rate (fps) above. auto uses sweep while on AC power and analog while on battery."
+      "description": "analog (default) snaps to each whole second and repaints exactly once per second — targetFps is ignored — for a classic analog-clock tick and the lowest possible CPU/GPU cost. sweep interpolates ring position continuously between whole seconds at the Repaint rate (fps) above. auto uses sweep while on AC power and analog while on battery. Any sweep drops to analog while windows are open on that output's workspace."
     },
     {
       "key": "numerals",

@@ -151,13 +151,17 @@ function tickStyleOptions() {
   ]
 }
 
-// Resolves "auto" against the power source. ClockFace only ever receives
-// "sweep" or "analog": resolving here keeps its two-timer gating unaware of
-// "auto", so a power change is just an ordinary tickStyle change to it.
-function effectiveTickStyle(style, onBattery) {
+// Resolves the tickStyle actually run. "auto" follows the power source; any
+// sweep (explicit, or auto on AC) drops to analog while the clock's workspace
+// has windows open (`covered`) — still correct behind see-through windows, at
+// analog cost. ClockFace only ever receives "sweep" or "analog": resolving
+// here keeps its two-timer gating unaware of either rule, so a power or
+// window change is just an ordinary tickStyle change to it.
+function effectiveTickStyle(style, onBattery, covered) {
   var s = normalizeTickStyle(style)
-  if (s !== "auto") return s
-  return onBattery ? "analog" : "sweep"
+  if (s === "auto") s = onBattery ? "analog" : "sweep"
+  if (s === "sweep" && covered) return "analog"
+  return s
 }
 
 function defaultArcDegreesForPosition(position) {

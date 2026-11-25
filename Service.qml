@@ -174,6 +174,9 @@ Item {
       readonly property bool screenActive: Clock.screenReady(modelData)
       readonly property var hyprMonitor: Hyprland.monitorFor(modelData)
       readonly property real screenRefreshRate: Clock.refreshRateForMonitor(hyprMonitor)
+      // Windows open on this output's workspace — sweep drops to analog.
+      readonly property bool covered: !!(hyprMonitor && hyprMonitor.activeWorkspace
+        && hyprMonitor.activeWorkspace.toplevels.values.length > 0)
       readonly property bool clockVisible: screenActive
         && root.cfg.clockEnabled !== false
         && root.shouldShowOnScreen(modelData)
@@ -261,7 +264,7 @@ Item {
           use24h: root.cfg.use24h
           showSeconds: root.cfg.showSeconds
           targetFps: root.cfg.targetFps
-          tickStyle: Clock.effectiveTickStyle(root.cfg.tickStyle, UPower.onBattery)
+          tickStyle: Clock.effectiveTickStyle(root.cfg.tickStyle, UPower.onBattery, panel.covered)
           numerals: root.cfg.numerals
           showDate: root.cfg.showDate
           accentMode: root.cfg.accentMode

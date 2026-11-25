@@ -403,7 +403,7 @@ Item {
                   availableWidth: 560
                   use24h: root.draft.use24h
                   showSeconds: root.draft.showSeconds
-                  tickStyle: Clock.effectiveTickStyle(root.draft.tickStyle, UPower.onBattery)
+                  tickStyle: Clock.effectiveTickStyle(root.draft.tickStyle, UPower.onBattery, false)
                   numerals: root.draft.numerals
                   showDate: root.draft.showDate
                   accentMode: root.draft.accentMode
@@ -673,6 +673,7 @@ Item {
                   : (root.draft.tickStyle === "auto"
                     ? "Auto: used while on AC power; on battery the clock ticks exactly once per second instead. "
                     : "")
+                    + "Sweep slows to once per second while windows are open on the clock's workspace. "
                     + "How often the rings redraw per second — independent of whether the seconds ring is shown. Lower values cut CPU/GPU cost; positions stay exact, they just update less often. The preview above is throttled while the panel is open and will not reflect this setting — check the clock itself."
                 minimum: 4
                 maximum: 60
